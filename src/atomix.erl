@@ -46,7 +46,7 @@ load_nif() ->
     erlang:load_nif(L, {?ATOMICS_NIF_VSN, unicode:characters_to_binary(L, E, E)}).
 
 -spec new(Arity::pos_integer()) -> atomics_ref().
-new(Arity) -> atomics_new(Arity, ?OPT_DEFAULT).
+new(Arity) -> atomics_new(Arity, ?OPT_DEFAULT band (bnot ?OPT_SIGNED)).
 
 -spec new(Arity::pos_integer(), Opts::[{signed, boolean()}]) -> atomics_ref().
 new(Arity, Opts) -> atomics_new(Arity, encode_opts(Opts, ?OPT_DEFAULT)).
