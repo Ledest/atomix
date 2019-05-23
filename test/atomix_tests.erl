@@ -12,7 +12,7 @@ bad_test() ->
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:new(10, [{signed, false}|bad])),
     Ref = atomix:new(10, []),
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:get(1742, 7)),
-    %?assertMatch({'EXIT', {badarg, _}}, catch atomix:get(<<>>, 7)),
+    ?assertMatch({'EXIT', {badarg, _}}, catch atomix:get(<<>>, 7)),
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:get(Ref, -1)),
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:get(Ref, 0)),
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:get(Ref, 11)),
