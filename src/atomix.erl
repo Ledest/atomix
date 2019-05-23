@@ -14,6 +14,11 @@
 -export_type([atomics_ref/0]).
 
 -opaque atomics_ref() :: binary().
+-ifdef(no_strict_map_type).
+-type info() :: #{size => non_neg_integer(), max => integer(), min => integer(), memory => non_neg_integer()}.
+-else.
+-type info() :: #{size := non_neg_integer(), max := integer(), min := integer(), memory := non_neg_integer()}.
+-endif.
 
 -on_load(load_nif/0).
 -define(ATOMICS_NIF_VSN, 1).
@@ -78,8 +83,7 @@ exchange(_Ref, _Ix, _Desired) -> erlang:nif_error(undef).
 -spec compare_exchange(Ref::atomics_ref(), Ix::integer(), Expected::integer(), Desired::integer()) -> ok | integer().
 compare_exchange(_Ref, _Ix, _Expected, _Desired) -> erlang:nif_error(undef).
 
--spec info(Ref::atomics_ref()) ->
-          #{size := non_neg_integer(), max := integer(), min := integer(), memory := non_neg_integer()}.
+-spec info(Ref::atomics_ref()) -> info().
 info(Ref) -> maps:from_list(atomics_info(Ref)).
 
 -spec atomics_info(Ref::atomics_ref()) -> [{size|max|min|memory, non_neg_integer()|integer()}].
