@@ -19,157 +19,148 @@ ERL_NIF_TERM new(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
 	unsigned int arity;
 	unsigned int opts;
-	size_t size;
-	atomics_handle_t* h;
-	ERL_NIF_TERM r;
 
-	if (!enif_get_uint(env, argv[0], &arity) || !enif_get_uint(env, argv[1], &opts) || arity == 0)
-		return enif_make_badarg(env);
-	size = arity * sizeof(uint64_t);
-	h = enif_alloc_resource(atomics_handle_resource, sizeof(atomics_handle_t) + size);
-	h->opts = opts;
-	h->arity = arity;
-	memset(h->array, 0, size);
-	r = enif_make_resource(env, h);
-	enif_release_resource(h);
-	return r;
+	if (enif_get_uint(env, argv[0], &arity) && arity && enif_get_uint(env, argv[1], &opts)) {
+		ERL_NIF_TERM r;
+		size_t size = arity * sizeof(uint64_t);
+		atomics_handle_t* h = enif_alloc_resource(atomics_handle_resource, sizeof(atomics_handle_t) + size);
+
+		h->opts = opts;
+		h->arity = arity;
+		memset(h->array, 0, size);
+		r = enif_make_resource(env, h);
+		enif_release_resource(h);
+		return r;
+	}
+	return enif_make_badarg(env);
 }
 
 ERL_NIF_TERM get(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-	unsigned int i;
 	atomics_handle_t* h;
+	unsigned int i;
 
-	if (!enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) ||
-	    !enif_get_uint(env, argv[1], &i) || i == 0 || i > h->arity)
-		return enif_make_badarg(env);
-
-	//return enif_make_uint64(env, h->array[i - 1]);
-	return enif_make_uint64(env, __atomic_load_n(h->array + i - 1, __ATOMIC_RELAXED));
+	return enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) &&
+	       enif_get_uint(env, argv[1], &i) && i && i <= h->arity
+	       ? enif_make_uint64(env, __atomic_load_n(h->array + i - 1, __ATOMIC_RELAXED))
+	       : enif_make_badarg(env);
 }
 
 ERL_NIF_TERM put(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
+	atomics_handle_t* h;
 	unsigned int i;
 	uint64_t v;
-	atomics_handle_t* h;
 
-	if (!enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) ||
-	    !enif_get_uint(env, argv[1], &i) || !enif_get_uint64(env, argv[2], &v) || i == 0 || i > h->arity)
-		return enif_make_badarg(env);
-	//h->array[i - 1] = v;
-	__atomic_store_n(h->array + i - 1, v, __ATOMIC_RELAXED);
-	return ATOM_OK;
+	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) &&
+	    enif_get_uint(env, argv[1], &i) && i && i <= h->arity && enif_get_uint64(env, argv[2], &v)) {
+		__atomic_store_n(h->array + i - 1, v, __ATOMIC_RELAXED);
+		return ATOM_OK;
+	}
+	return enif_make_badarg(env);
 }
 
 ERL_NIF_TERM add(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
+	atomics_handle_t* h;
 	unsigned int i;
 	uint64_t v;
-	atomics_handle_t* h;
 
-	if (!enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) ||
-	    !enif_get_uint(env, argv[1], &i) || !enif_get_uint64(env, argv[2], &v) || i == 0 || i > h->arity)
-		return enif_make_badarg(env);
-	//h->array[i - 1] += v;
-	__atomic_add_fetch(h->array + i - 1, v, __ATOMIC_RELAXED);
-	return ATOM_OK;
+	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) &&
+	    enif_get_uint(env, argv[1], &i) && i && i <= h->arity && enif_get_uint64(env, argv[2], &v)) {
+		__atomic_add_fetch(h->array + i - 1, v, __ATOMIC_RELAXED);
+		return ATOM_OK;
+	}
+	return enif_make_badarg(env);
 }
 
 ERL_NIF_TERM sub(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
+	atomics_handle_t* h;
 	unsigned int i;
 	uint64_t v;
-	atomics_handle_t* h;
 
-	if (!enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) ||
-	    !enif_get_uint(env, argv[1], &i) || !enif_get_uint64(env, argv[2], &v) || i == 0 || i > h->arity)
-		return enif_make_badarg(env);
-	//h->array[i - 1] -= v;
-	__atomic_sub_fetch(h->array + i - 1, v, __ATOMIC_RELAXED);
-	return ATOM_OK;
+	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) &&
+	    enif_get_uint(env, argv[1], &i) && i && i <= h->arity && enif_get_uint64(env, argv[2], &v)) {
+		__atomic_sub_fetch(h->array + i - 1, v, __ATOMIC_RELAXED);
+		return ATOM_OK;
+	}
+	return enif_make_badarg(env);
 }
 
 ERL_NIF_TERM add_get(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
+	atomics_handle_t* h;
 	unsigned int i;
 	uint64_t v;
-	atomics_handle_t* h;
 
-	if (!enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) ||
-	    !enif_get_uint(env, argv[1], &i) || !enif_get_uint64(env, argv[2], &v) || i == 0 || i > h->arity)
-		return enif_make_badarg(env);
-
-	return enif_make_uint64(env, __atomic_add_fetch(h->array + i - 1, v, __ATOMIC_RELAXED));
+	return enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) &&
+	       enif_get_uint(env, argv[1], &i) && i && i <= h->arity && enif_get_uint64(env, argv[2], &v)
+	       ? enif_make_uint64(env, __atomic_add_fetch(h->array + i - 1, v, __ATOMIC_RELAXED))
+	       : enif_make_badarg(env);
 }
 
 ERL_NIF_TERM sub_get(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
+	atomics_handle_t* h;
 	unsigned int i;
 	uint64_t v;
-	atomics_handle_t* h;
 
-	if (!enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) ||
-	    !enif_get_uint(env, argv[1], &i) || !enif_get_uint64(env, argv[2], &v) || i == 0 || i > h->arity)
-		return enif_make_badarg(env);
-
-	return enif_make_uint64(env, __atomic_sub_fetch(h->array + i - 1, v, __ATOMIC_RELAXED));
+	return enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) &&
+	       enif_get_uint(env, argv[1], &i) && i && i <= h->arity && enif_get_uint64(env, argv[2], &v)
+	       ? enif_make_uint64(env, __atomic_sub_fetch(h->array + i - 1, v, __ATOMIC_RELAXED))
+	       : enif_make_badarg(env);
 }
 
 ERL_NIF_TERM exchange(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
+	atomics_handle_t* h;
 	unsigned int i;
 	uint64_t v;
-	atomics_handle_t* h;
 
-	if (!enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) ||
-	    !enif_get_uint(env, argv[1], &i) || !enif_get_uint64(env, argv[2], &v) || i == 0 || i > h->arity)
-		return enif_make_badarg(env);
-	//uint64_t r = h->array[--i];
-	//h->array[i] = v;
-
-	return enif_make_uint64(env, __atomic_exchange_n(h->array + i - 1, v, __ATOMIC_RELAXED));
+	return enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) &&
+	       enif_get_uint(env, argv[1], &i) && i && i <= h->arity && enif_get_uint64(env, argv[2], &v)
+	       ? enif_make_uint64(env, __atomic_exchange_n(h->array + i - 1, v, __ATOMIC_RELAXED))
+	       : enif_make_badarg(env);
 }
 
 ERL_NIF_TERM compare_exchange(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
+	atomics_handle_t* h;
 	unsigned int i;
 	uint64_t e, d;
-	atomics_handle_t* h;
 
-	if (!enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) ||
-	    !enif_get_uint(env, argv[1], &i) || i == 0 || i > h->arity ||
-	    !enif_get_uint64(env, argv[2], &e) || !enif_get_uint64(env, argv[3], &d))
-		return enif_make_badarg(env);
-	//if (h->array[--i] != e)
-	//	return enif_make_uint64(env, h->array[i]);
-	//h->array[i] = d;
-	return __atomic_compare_exchange_n(h->array + i - 1, &e, d, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED)
-	       ? ATOM_OK
-	       : enif_make_uint64(env, e);
+	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h) &&
+	    enif_get_uint(env, argv[1], &i) && i && i <= h->arity &&
+	    enif_get_uint64(env, argv[2], &e) && enif_get_uint64(env, argv[3], &d))
+		return __atomic_compare_exchange_n(h->array + i - 1, &e, d, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED)
+		       ? ATOM_OK
+		       : enif_make_uint64(env, e);
+	return enif_make_badarg(env);
 }
 
 ERL_NIF_TERM info(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
 	atomics_handle_t* h;
-	uint64_t max, min;
 
-	if (!enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h))
-		return enif_make_badarg(env);
-	if (h->opts & OPT_SIGNED) {
-		max = INT64_MAX;
-		min = INT64_MIN;
-	} else {
-		max = UINT64_MAX;
-		min = 0;
+	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h)) {
+		uint64_t max, min;
+
+		if (h->opts & OPT_SIGNED) {
+			max = INT64_MAX;
+			min = INT64_MIN;
+		} else {
+			max = UINT64_MAX;
+			min = 0;
+		}
+		return enif_make_list4(env,
+				       enif_make_tuple2(env, enif_make_atom(env, "size"), enif_make_uint(env, h->arity)),
+				       enif_make_tuple2(env, enif_make_atom(env, "max"), enif_make_uint64(env, max)),
+				       enif_make_tuple2(env, enif_make_atom(env, "min"), enif_make_uint64(env, min)),
+				       enif_make_tuple2(env, enif_make_atom(env, "memory"),
+							enif_make_uint64(env, h->arity * sizeof(uint64_t) + 40)));
 	}
-	return enif_make_list4(env,
-			       enif_make_tuple2(env, enif_make_atom(env, "size"), enif_make_uint(env, h->arity)),
-			       enif_make_tuple2(env, enif_make_atom(env, "max"), enif_make_uint64(env, max)),
-			       enif_make_tuple2(env, enif_make_atom(env, "min"), enif_make_uint64(env, min)),
-			       enif_make_tuple2(env, enif_make_atom(env, "memory"),
-								    enif_make_uint64(env,
-										     h->arity * sizeof(uint64_t) + 40)));
+	return enif_make_badarg(env);
 }
 
 static void atomics_handle_dtor(ErlNifEnv *env, void *r)
@@ -177,14 +168,9 @@ static void atomics_handle_dtor(ErlNifEnv *env, void *r)
 	enif_release_resource(r);
 }
 
-static void init(ErlNifEnv* env)
-{
-	ATOM_OK = enif_make_atom(env, "ok");
-}
-
 static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
 {
-	init(env);
+	ATOM_OK = enif_make_atom(env, "ok");
 	atomics_handle_resource = enif_open_resource_type(env, NULL, "atomics_handle", &atomics_handle_dtor,
 							  ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER, NULL);
 	return 0;
