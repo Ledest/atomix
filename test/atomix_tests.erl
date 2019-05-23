@@ -43,24 +43,6 @@ signed_do(Ref, Ix) ->
     ?assertEqual(3, atomix:exchange(Ref, Ix, 666)),
     ?assertEqual(ok, atomix:compare_exchange(Ref, Ix, 666, 777)),
     ?assertEqual(777, atomix:compare_exchange(Ref, Ix, 666, -666)).
-
-signed_limits_test() ->
-    Bits = 64,
-    Max = (1 bsl (Bits - 1)) - 1,
-    Min = -(1 bsl (Bits - 1)),
-    Ref = atomix:new(1, [{signed, true}]),
-    ?assertMatch(#{max := Max, min := Min}, atomix:info(Ref)),
-    ?assertEqual(0, atomix:get(Ref, 1)),
-    ?assertEqual(ok, atomix:add(Ref, 1, Max)),
-    ?assertEqual(Min, atomix:add_get(Ref, 1, 1)),
-    ?assertEqual(Max, atomix:sub_get(Ref, 1, 1)),
-    IncrMax = (Max bsl 1) bor 1,
-    ?assertEqual(ok, atomix:put(Ref, 1, 0)),
-    ?assertEqual(ok, atomix:add(Ref, 1, IncrMax)),
-    ?assertEqual(-1, atomix:get(Ref, 1)),
-    ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, IncrMax + 1)),
-    ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, Min - 1)),
-    ok.
 -endif.
 
 unsigned_test() ->
@@ -85,6 +67,7 @@ unsigned_do(Ref, Ix) ->
     ?assertEqual(ok, atomix:compare_exchange(Ref, Ix, 666, 777)),
     ?assertEqual(777, atomix:compare_exchange(Ref, Ix, 666, 888)).
 
+-ifndef(MODULE).
 unsigned_limits_test() ->
     Bits = 64,
     Max = (1 bsl Bits) - 1,
@@ -99,7 +82,26 @@ unsigned_limits_test() ->
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, Max + 1)),
     IncrMin = -(1 bsl (Bits-1)),
     ?assertEqual(ok, atomix:put(Ref, 1, -IncrMin)),
-    %?assertEqual(ok, atomix:add(Ref, 1, IncrMin)),
-    %?assertEqual(0, atomix:get(Ref, 1)),
-    %?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, IncrMin - 1)),
+    ?assertEqual(ok, atomix:add(Ref, 1, IncrMin)),
+    ?assertEqual(0, atomix:get(Ref, 1)),
+    ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, IncrMin - 1)),
     ok.
+
+signed_limits_test() ->
+    Bits = 64,
+    Max = (1 bsl (Bits - 1)) - 1,
+    Min = -(1 bsl (Bits - 1)),
+    Ref = atomix:new(1, [{signed, true}]),
+    ?assertMatch(#{max := Max, min := Min}, atomix:info(Ref)),
+    ?assertEqual(0, atomix:get(Ref, 1)),
+    ?assertEqual(ok, atomix:add(Ref, 1, Max)),
+    ?assertEqual(Min, atomix:add_get(Ref, 1, 1)),
+    ?assertEqual(Max, atomix:sub_get(Ref, 1, 1)),
+    IncrMax = (Max bsl 1) bor 1,
+    ?assertEqual(ok, atomix:put(Ref, 1, 0)),
+    ?assertEqual(ok, atomix:add(Ref, 1, IncrMax)),
+    ?assertEqual(-1, atomix:get(Ref, 1)),
+    ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, IncrMax + 1)),
+    ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, Min - 1)),
+    ok.
+-endif.
