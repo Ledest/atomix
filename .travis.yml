@@ -1,0 +1,8 @@
+language: erlang
+notifications:
+  email: false
+otp_release:
+  - 20.3.8
+  - 19.3.6
+  - 18.3
+script: rebar compile && rebar eunit
