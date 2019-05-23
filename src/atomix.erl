@@ -20,6 +20,8 @@
 -type info() :: #{size := non_neg_integer(), max := integer(), min := integer(), memory := non_neg_integer()}.
 -endif.
 
+-compile(no_inline).
+
 -on_load(load_nif/0).
 -define(ATOMICS_NIF_VSN, 1).
 
