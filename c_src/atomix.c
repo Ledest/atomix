@@ -145,6 +145,7 @@ ERL_NIF_TERM info(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h)) {
 		uint64_t max, min;
+		ERL_NIF_TERM m = enif_make_new_map(env);
 
 		if (h->opts & OPT_SIGNED) {
 			max = INT64_MAX;
@@ -153,12 +154,12 @@ ERL_NIF_TERM info(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 			max = UINT64_MAX;
 			min = 0;
 		}
-		return enif_make_list4(env,
-				       enif_make_tuple2(env, enif_make_atom(env, "size"), enif_make_uint(env, h->arity)),
-				       enif_make_tuple2(env, enif_make_atom(env, "max"), enif_make_uint64(env, max)),
-				       enif_make_tuple2(env, enif_make_atom(env, "min"), enif_make_uint64(env, min)),
-				       enif_make_tuple2(env, enif_make_atom(env, "memory"),
-							enif_make_uint64(env, h->arity * sizeof(uint64_t) + 40)));
+		enif_make_map_put(env, m, enif_make_atom(env, "size"), enif_make_uint(env, h->arity), &m);
+		enif_make_map_put(env, m, enif_make_atom(env, "max"), enif_make_uint64(env, max), &m);
+		enif_make_map_put(env, m, enif_make_atom(env, "min"), enif_make_uint64(env, min), &m);
+		enif_make_map_put(env, m, enif_make_atom(env, "memory"),
+				  enif_make_uint64(env, h->arity * sizeof(uint64_t) + 40), &m);
+		return m;
 	}
 	return enif_make_badarg(env);
 }
@@ -196,7 +197,7 @@ static ErlNifFunc nif_functions[] = {
 	{"sub_get", 3, sub_get},
 	{"exchange", 3, exchange},
 	{"compare_exchange", 4, compare_exchange},
-	{"atomics_info", 1, info}
+	{"info", 1, info}
 };
 
 ERL_NIF_INIT(atomix, nif_functions, &on_load, &on_reload, &on_upgrade, NULL);

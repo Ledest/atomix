@@ -86,7 +86,4 @@ exchange(_Ref, _Ix, _Desired) -> erlang:nif_error(undef).
 compare_exchange(_Ref, _Ix, _Expected, _Desired) -> erlang:nif_error(undef).
 
 -spec info(Ref::atomics_ref()) -> info().
-info(Ref) -> maps:from_list(atomics_info(Ref)).
-
--spec atomics_info(Ref::atomics_ref()) -> [{size|max|min|memory, non_neg_integer()|integer()}].
-atomics_info(_Ref) -> erlang:nif_error(undef).
+info(_Ref) -> erlang:nif_error(undef).
