@@ -5,4 +5,5 @@ otp_release:
   - 20.3.8
   - 19.3.6
   - 18.3
+  - 17.5
 script: rebar compile && rebar eunit
