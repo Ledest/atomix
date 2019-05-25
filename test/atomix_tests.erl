@@ -18,7 +18,6 @@ bad_test() ->
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:get(Ref, 11)),
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:get(Ref, 7.0)).
 
--ifndef(MODULE).
 signed_test() ->
     Size = 10,
     Ref = atomix:new(Size, []),
@@ -26,8 +25,9 @@ signed_test() ->
     ?assertMatch(#{size := Size}, Info),
     ?assert(Memory > Size * 8),
     ?assert(Memory < Size * 8 + 100),
-    [signed_do(Ref, Ix) || Ix <- lists:seq(1, Size)].
+    signed_do(Ref, Size).
 
+signed_do(_Ref, 0) -> ok;
 signed_do(Ref, Ix) ->
     ?assertEqual(0, atomix:get(Ref, Ix)),
     ?assertEqual(ok, atomix:put(Ref, Ix, 3)),
@@ -42,8 +42,8 @@ signed_do(Ref, Ix) ->
     ?assertEqual(3, atomix:sub_get(Ref, Ix, -10)),
     ?assertEqual(3, atomix:exchange(Ref, Ix, 666)),
     ?assertEqual(ok, atomix:compare_exchange(Ref, Ix, 666, 777)),
-    ?assertEqual(777, atomix:compare_exchange(Ref, Ix, 666, -666)).
--endif.
+    ?assertEqual(777, atomix:compare_exchange(Ref, Ix, 666, -666)),
+    signed_do(Ref, Ix - 1).
 
 unsigned_test() ->
     Size = 10,
@@ -52,8 +52,9 @@ unsigned_test() ->
     ?assertMatch(#{size := Size}, Info),
     ?assert(Memory > Size * 8),
     ?assert(Memory < Size * 8 + 100),
-    [unsigned_do(Ref, Ix) || Ix <- lists:seq(1, Size)].
+    unsigned_do(Ref, Size).
 
+unsigned_do(_Ref, 0) -> ok;
 unsigned_do(Ref, Ix) ->
     ?assertEqual(0, atomix:get(Ref, Ix)),
     ?assertEqual(ok, atomix:put(Ref, Ix, 3)),
@@ -65,9 +66,9 @@ unsigned_do(Ref, Ix) ->
     ?assertEqual(3, atomix:sub_get(Ref, Ix, 10)),
     ?assertEqual(3, atomix:exchange(Ref, Ix, 666)),
     ?assertEqual(ok, atomix:compare_exchange(Ref, Ix, 666, 777)),
-    ?assertEqual(777, atomix:compare_exchange(Ref, Ix, 666, 888)).
+    ?assertEqual(777, atomix:compare_exchange(Ref, Ix, 666, 888)),
+    unsigned_do(Ref, Ix - 1).
 
--ifndef(MODULE).
 unsigned_limits_test() ->
     Bits = 64,
     Max = (1 bsl Bits) - 1,
@@ -84,8 +85,7 @@ unsigned_limits_test() ->
     ?assertEqual(ok, atomix:put(Ref, 1, -IncrMin)),
     ?assertEqual(ok, atomix:add(Ref, 1, IncrMin)),
     ?assertEqual(0, atomix:get(Ref, 1)),
-    ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, IncrMin - 1)),
-    ok.
+    ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, IncrMin - 1)).
 
 signed_limits_test() ->
     Bits = 64,
@@ -102,6 +102,4 @@ signed_limits_test() ->
     ?assertEqual(ok, atomix:add(Ref, 1, IncrMax)),
     ?assertEqual(-1, atomix:get(Ref, 1)),
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, IncrMax + 1)),
-    ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, Min - 1)),
-    ok.
--endif.
+    ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, Min - 1)).
