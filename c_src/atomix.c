@@ -246,7 +246,7 @@ static ERL_NIF_TERM info(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 static void atomics_handle_dtor(ErlNifEnv *env, void *r)
 {
-	//enif_release_resource(r);
+	enif_release_resource(r);
 }
 
 static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
