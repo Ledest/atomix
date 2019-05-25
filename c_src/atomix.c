@@ -201,7 +201,7 @@ static ERL_NIF_TERM compare_exchange(ErlNifEnv* env, int argc, const ERL_NIF_TER
 			int64_t e, d;
 
 			if (enif_get_int64(env, argv[2], &e) && enif_get_int64(env, argv[3], &d))
-				return __atomic_compare_exchange_n(h->array.s + i, &e, d, true,
+				return __atomic_compare_exchange_n(h->array.s + i, &e, d, false,
 								   __ATOMIC_RELAXED, __ATOMIC_RELAXED)
 				       ? ATOM_OK
 				       : enif_make_int64(env, e);
@@ -209,7 +209,7 @@ static ERL_NIF_TERM compare_exchange(ErlNifEnv* env, int argc, const ERL_NIF_TER
 			uint64_t e, d;
 
 			if (enif_get_uint64(env, argv[2], &e) && enif_get_uint64(env, argv[3], &d))
-				return __atomic_compare_exchange_n(h->array.u + i, &e, d, true,
+				return __atomic_compare_exchange_n(h->array.u + i, &e, d, false,
 								   __ATOMIC_RELAXED, __ATOMIC_RELAXED)
 				       ? ATOM_OK
 				       : enif_make_uint64(env, e);
