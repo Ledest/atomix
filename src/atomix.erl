@@ -14,10 +14,14 @@
 -export_type([atomics_ref/0]).
 
 -opaque atomics_ref() :: binary().
+-ifdef(no_maps).
+-type info() :: [{size|max|min|memory, integer()}].
+-else.
 -ifdef(no_strict_map_type).
 -type info() :: #{size => non_neg_integer(), max => integer(), min => integer(), memory => non_neg_integer()}.
 -else.
 -type info() :: #{size := non_neg_integer(), max := integer(), min := integer(), memory := non_neg_integer()}.
+-endif.
 -endif.
 
 -compile(no_inline).

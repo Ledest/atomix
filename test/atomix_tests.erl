@@ -21,8 +21,9 @@ bad_test() ->
 signed_test() ->
     Size = 10,
     Ref = atomix:new(Size, []),
-    Info = #{memory := Memory} = atomix:info(Ref),
-    ?assertMatch(#{size := Size}, Info),
+    Info = atomix:info(Ref),
+    check_size(Info, Size),
+    Memory = get_memory(Info),
     ?assert(Memory > Size * 8),
     ?assert(Memory < Size * 8 + 100),
     signed_do(Ref, Size).
@@ -48,8 +49,9 @@ signed_do(Ref, Ix) ->
 unsigned_test() ->
     Size = 10,
     Ref = atomix:new(Size, [{signed, false}]),
-    Info = #{memory := Memory} = atomix:info(Ref),
-    ?assertMatch(#{size := Size}, Info),
+    Info = atomix:info(Ref),
+    check_size(Info, Size),
+    Memory = get_memory(Info),
     ?assert(Memory > Size * 8),
     ?assert(Memory < Size * 8 + 100),
     unsigned_do(Ref, Size).
@@ -74,7 +76,7 @@ unsigned_limits_test() ->
     Max = (1 bsl Bits) - 1,
     Min = 0,
     Ref = atomix:new(1, [{signed, false}]),
-    ?assertMatch(#{max := Max, min := Min}, atomix:info(Ref)),
+    check_range(Ref, Max, Min),
     ?assertEqual(0, atomix:get(Ref, 1)),
     ?assertEqual(ok, atomix:add(Ref, 1, Max)),
     ?assertEqual(Min, atomix:add_get(Ref, 1, 1)),
@@ -92,7 +94,7 @@ signed_limits_test() ->
     Max = (1 bsl (Bits - 1)) - 1,
     Min = -(1 bsl (Bits - 1)),
     Ref = atomix:new(1, [{signed, true}]),
-    ?assertMatch(#{max := Max, min := Min}, atomix:info(Ref)),
+    check_range(Ref, Max, Min),
     ?assertEqual(0, atomix:get(Ref, 1)),
     ?assertEqual(ok, atomix:add(Ref, 1, Max)),
     ?assertEqual(Min, atomix:add_get(Ref, 1, 1)),
@@ -103,3 +105,18 @@ signed_limits_test() ->
     ?assertEqual(-1, atomix:get(Ref, 1)),
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, IncrMax + 1)),
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, Min - 1)).
+
+-ifdef(no_maps).
+check_range(Ref, Max, Min) ->
+    Info = atomix:info(Ref),
+    ?assertMatch({max, Max}, lists:keyfind(max, 1, Info)),
+    ?assertMatch({min, Min}, lists:keyfind(min, 1, Info)).
+check_size(Info, Size) -> ?assertMatch({size, Size}, lists:keyfind(size, 1, Info)).
+get_memory(Info) ->
+    {memory, Memory} = lists:keyfind(memory, 1, Info),
+    Memory.
+-else.
+check_range(Ref, Max, Min) -> ?assertMatch(#{max := Max, min := Min}, atomix:info(Ref)).
+check_size(Info, Size) -> ?assertMatch(#{size := Size}, Info).
+get_memory(#{memory := Memory} = _Info) -> Memory.
+-endif.
