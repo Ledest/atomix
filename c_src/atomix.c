@@ -257,24 +257,21 @@ static void atomics_handle_dtor(ErlNifEnv *env, void *r)
 	enif_release_resource(r);
 }
 
-static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
+static int load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
 {
+	atomics_handle_resource = enif_open_resource_type(env, NULL, "atomics_handle", &atomics_handle_dtor,
+							  ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER, NULL);
+	if (atomics_handle_resource == NULL)
+		return -1;
 	atom_ok = enif_make_atom(env, "ok");
 	atom_max = enif_make_atom(env, "max");
 	atom_min = enif_make_atom(env, "min");
 	atom_size = enif_make_atom(env, "size");
 	atom_memory = enif_make_atom(env, "memory");
-	atomics_handle_resource = enif_open_resource_type(env, NULL, "atomics_handle", &atomics_handle_dtor,
-							  ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER, NULL);
 	return 0;
 }
 
-static int on_reload(ErlNifEnv* env, void**priv, ERL_NIF_TERM info)
-{
-	return 0;
-}
-
-static int on_upgrade(ErlNifEnv* env, void** priv, void** old_priv, ERL_NIF_TERM info)
+static int upgrade(ErlNifEnv* env, void** priv, void** old_priv, ERL_NIF_TERM info)
 {
 	return 0;
 }
@@ -292,4 +289,4 @@ static ErlNifFunc nif_functions[] = {
 	{"info", 1, info}
 };
 
-ERL_NIF_INIT(atomix, nif_functions, &on_load, &on_reload, &on_upgrade, NULL);
+ERL_NIF_INIT(atomix, nif_functions, &load, NULL, &upgrade, NULL);
