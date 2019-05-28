@@ -5,7 +5,7 @@
 
 #define OPT_SIGNED 0b00000001
 
-static ERL_NIF_TERM ATOM_OK;
+static ERL_NIF_TERM atom_ok, atom_max, atom_min, atom_size, atom_memory;
 
 typedef struct {
 	uint32_t opts;
@@ -64,14 +64,14 @@ static ERL_NIF_TERM put(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 			if (enif_get_int64(env, argv[2], &v)) {
 				__atomic_store_n(h->array.s + i, v, __ATOMIC_RELAXED);
-				return ATOM_OK;
+				return atom_ok;
 			}
 		} else {
 			uint64_t v;
 
 			if (enif_get_uint64(env, argv[2], &v)) {
 				__atomic_store_n(h->array.u + i, v, __ATOMIC_RELAXED);
-				return ATOM_OK;
+				return atom_ok;
 			}
 		}
 	}
@@ -95,7 +95,7 @@ static ERL_NIF_TERM add(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 				__atomic_add_fetch(h->array.s + i, v.s, __ATOMIC_RELAXED);
 			else
 				__atomic_add_fetch(h->array.u + i, v.u, __ATOMIC_RELAXED);
-			return ATOM_OK;
+			return atom_ok;
 		}
 	}
 	return enif_make_badarg(env);
@@ -118,7 +118,7 @@ static ERL_NIF_TERM sub(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 				__atomic_sub_fetch(h->array.s + i, v.s, __ATOMIC_RELAXED);
 			else
 				__atomic_sub_fetch(h->array.u + i, v.u, __ATOMIC_RELAXED);
-			return ATOM_OK;
+			return atom_ok;
 		}
 	}
 	return enif_make_badarg(env);
@@ -203,7 +203,7 @@ static ERL_NIF_TERM compare_exchange(ErlNifEnv* env, int argc, const ERL_NIF_TER
 			if (enif_get_int64(env, argv[2], &e) && enif_get_int64(env, argv[3], &d))
 				return __atomic_compare_exchange_n(h->array.s + i, &e, d, false,
 								   __ATOMIC_RELAXED, __ATOMIC_RELAXED)
-				       ? ATOM_OK
+				       ? atom_ok
 				       : enif_make_int64(env, e);
 		} else {
 			uint64_t e, d;
@@ -211,7 +211,7 @@ static ERL_NIF_TERM compare_exchange(ErlNifEnv* env, int argc, const ERL_NIF_TER
 			if (enif_get_uint64(env, argv[2], &e) && enif_get_uint64(env, argv[3], &d))
 				return __atomic_compare_exchange_n(h->array.u + i, &e, d, false,
 								   __ATOMIC_RELAXED, __ATOMIC_RELAXED)
-				       ? ATOM_OK
+				       ? atom_ok
 				       : enif_make_uint64(env, e);
 		}
 	}
@@ -236,18 +236,17 @@ static ERL_NIF_TERM info(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 		}
 #if ERL_NIF_MAJOR_VERSION >= 2 && ERL_NIF_MINOR_VERSION >= 6
 		ERL_NIF_TERM m = enif_make_new_map(env);
-		enif_make_map_put(env, m, enif_make_atom(env, "size"), enif_make_uint(env, h->arity), &m);
-		enif_make_map_put(env, m, enif_make_atom(env, "max"), max, &m);
-		enif_make_map_put(env, m, enif_make_atom(env, "min"), min, &m);
-		enif_make_map_put(env, m, enif_make_atom(env, "memory"), enif_make_uint64(env, memory), &m);
+		enif_make_map_put(env, m, atom_size, enif_make_uint(env, h->arity), &m);
+		enif_make_map_put(env, m, atom_max, max, &m);
+		enif_make_map_put(env, m, atom_min, min, &m);
+		enif_make_map_put(env, m, atom_memory, enif_make_uint64(env, memory), &m);
 		return m;
 #else
 		return enif_make_list4(env,
-				       enif_make_tuple2(env, enif_make_atom(env, "size"), enif_make_uint(env, h->arity)),
-				       enif_make_tuple2(env, enif_make_atom(env, "max"), max),
-				       enif_make_tuple2(env, enif_make_atom(env, "min"), min),
-				       enif_make_tuple2(env,
-							enif_make_atom(env, "memory"), enif_make_uint64(env, memory)));
+				       enif_make_tuple2(env, atom_size, enif_make_uint(env, h->arity)),
+				       enif_make_tuple2(env, atom_max, max),
+				       enif_make_tuple2(env, atom_min, min),
+				       enif_make_tuple2(env, atom_memory, enif_make_uint64(env, memory)));
 #endif
 	}
 	return enif_make_badarg(env);
@@ -260,7 +259,11 @@ static void atomics_handle_dtor(ErlNifEnv *env, void *r)
 
 static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
 {
-	ATOM_OK = enif_make_atom(env, "ok");
+	atom_ok = enif_make_atom(env, "ok");
+	atom_max = enif_make_atom(env, "max");
+	atom_min = enif_make_atom(env, "min");
+	atom_size = enif_make_atom(env, "size");
+	atom_memory = enif_make_atom(env, "memory");
 	atomics_handle_resource = enif_open_resource_type(env, NULL, "atomics_handle", &atomics_handle_dtor,
 							  ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER, NULL);
 	return 0;
