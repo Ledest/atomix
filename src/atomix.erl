@@ -51,15 +51,7 @@ load_nif() ->
 new(Arity) -> atomics_new(Arity, ?OPT_DEFAULT band (bnot ?OPT_SIGNED)).
 
 -spec new(Arity::pos_integer(), Opts::[{signed, boolean()}]) -> atomics_ref().
-new(Arity, Opts) -> atomics_new(Arity, encode_opts(Opts, ?OPT_DEFAULT)).
-
--spec atomics_new(Arity::pos_integer(), Opts::non_neg_integer()) -> atomics_ref().
-atomics_new(_Arity, _Opts) -> erlang:nif_error(undef).
-
-encode_opts([{signed, true}|T], Acc) -> encode_opts(T, Acc bor ?OPT_SIGNED);
-encode_opts([{signed, false}|T], Acc) -> encode_opts(T, Acc band (bnot ?OPT_SIGNED));
-encode_opts([], Acc) -> Acc;
-encode_opts(_, _) -> error(badarg).
+new(Arity, Opts) -> atomics_new(Arity, encode_opts(Opts)).
 
 -spec put(Ref::atomics_ref(), Ix::integer(), Value::integer()) -> ok.
 put(_Ref, _Ix, _Value) -> erlang:nif_error(undef).
@@ -87,3 +79,14 @@ compare_exchange(_Ref, _Ix, _Expected, _Desired) -> erlang:nif_error(undef).
 
 -spec info(Ref::atomics_ref()) -> info().
 info(_Ref) -> erlang:nif_error(undef).
+
+-spec atomics_new(Arity::pos_integer(), Opts::non_neg_integer()) -> atomics_ref().
+atomics_new(_Arity, _Opts) -> erlang:nif_error(undef).
+
+-compile({inline, encode_opts/1}).
+encode_opts(Opts) -> encode_opts(Opts, ?OPT_DEFAULT).
+
+encode_opts([{signed, true}|T], A) -> encode_opts(T, A bor ?OPT_SIGNED);
+encode_opts([{signed, false}|T], A) -> encode_opts(T, A band (bnot ?OPT_SIGNED));
+encode_opts([], A) -> A;
+encode_opts(_, _) -> error(badarg).
