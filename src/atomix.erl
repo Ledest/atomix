@@ -41,7 +41,7 @@ load_nif() ->
                             _ -> "."
                         end
                 end;
-            D -> D
+            D -> filename:join(D, "lib")
         end,
     E = file:native_name_encoding(),
     L = filename:join(P, "atomix"),
