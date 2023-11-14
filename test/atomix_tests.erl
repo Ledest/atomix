@@ -106,17 +106,6 @@ signed_limits_test() ->
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, IncrMax + 1)),
     ?assertMatch({'EXIT', {badarg, _}}, catch atomix:add(Ref, 1, Min - 1)).
 
--ifdef(no_maps).
-check_range(Ref, Max, Min) ->
-    Info = atomix:info(Ref),
-    ?assertMatch({max, Max}, lists:keyfind(max, 1, Info)),
-    ?assertMatch({min, Min}, lists:keyfind(min, 1, Info)).
-check_size(Info, Size) -> ?assertMatch({size, Size}, lists:keyfind(size, 1, Info)).
-get_memory(Info) ->
-    {memory, Memory} = lists:keyfind(memory, 1, Info),
-    Memory.
--else.
 check_range(Ref, Max, Min) -> ?assertMatch(#{max := Max, min := Min}, atomix:info(Ref)).
 check_size(Info, Size) -> ?assertMatch(#{size := Size}, Info).
 get_memory(#{memory := Memory} = _Info) -> Memory.
--endif.

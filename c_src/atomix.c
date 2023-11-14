@@ -234,20 +234,12 @@ static ERL_NIF_TERM info(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 			max = enif_make_uint64(env, UINT64_MAX);
 			min = enif_make_uint64(env, 0);
 		}
-#if ERL_NIF_MAJOR_VERSION >= 2 && ERL_NIF_MINOR_VERSION >= 6
 		ERL_NIF_TERM m = enif_make_new_map(env);
 		enif_make_map_put(env, m, atom_size, enif_make_uint(env, h->arity), &m);
 		enif_make_map_put(env, m, atom_max, max, &m);
 		enif_make_map_put(env, m, atom_min, min, &m);
 		enif_make_map_put(env, m, atom_memory, enif_make_uint64(env, memory), &m);
 		return m;
-#else
-		return enif_make_list4(env,
-				       enif_make_tuple2(env, atom_size, enif_make_uint(env, h->arity)),
-				       enif_make_tuple2(env, atom_max, max),
-				       enif_make_tuple2(env, atom_min, min),
-				       enif_make_tuple2(env, atom_memory, enif_make_uint64(env, memory)));
-#endif
 	}
 	return enif_make_badarg(env);
 }
