@@ -5,11 +5,11 @@
 
 #define OPT_SIGNED 0b00000001
 
-static ERL_NIF_TERM atom_ok, atom_max, atom_min, atom_size, atom_memory;
+static ERL_NIF_TERM atom_ok, atom_max, atom_min, atom_size, atom_memory, atom_system_limit;
 
 typedef struct {
 	uint32_t opts;
-	uint32_t arity;
+	uint64_t arity;
 	union {
 		int64_t s[0];
 		uint64_t u[0];
@@ -20,23 +20,27 @@ static ErlNifResourceType *atomics_handle_resource = NULL;
 
 static ERL_NIF_TERM new(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-	unsigned int arity;
+	uint64_t arity;
 
-	if (enif_get_uint(env, argv[0], &arity) && arity) {
-		unsigned int opts;
+	if (enif_get_uint64(env, argv[0], &arity) && arity) {
+		if (arity > UINT64_MAX / sizeof(uint64_t))
+			return enif_raise_exception(env, atom_system_limit);
+		else {
+			unsigned int opts;
 
-		if(enif_get_uint(env, argv[1], &opts)) {
-			ERL_NIF_TERM r;
-			size_t size = arity * (opts & OPT_SIGNED ? sizeof(int64_t) : sizeof(uint64_t));
-			atomics_handle_t* h = enif_alloc_resource(atomics_handle_resource,
-								  sizeof(atomics_handle_t) + size);
+			if(enif_get_uint(env, argv[1], &opts)) {
+				ERL_NIF_TERM r;
+				size_t size = arity * (opts & OPT_SIGNED ? sizeof(int64_t) : sizeof(uint64_t));
+				atomics_handle_t* h = enif_alloc_resource(atomics_handle_resource,
+									  sizeof(atomics_handle_t) + size);
 
-			h->opts = opts;
-			h->arity = arity;
-			memset(&h->array, 0, size);
-			r = enif_make_resource(env, h);
-			enif_release_resource(h);
-			return r;
+				h->opts = opts;
+				h->arity = arity;
+				memset(&h->array, 0, size);
+				r = enif_make_resource(env, h);
+				enif_release_resource(h);
+				return r;
+			}
 		}
 	}
 	return enif_make_badarg(env);
@@ -47,9 +51,9 @@ static ERL_NIF_TERM get(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	atomics_handle_t* h;
 
 	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h)) {
-		unsigned int i;
+		uint64_t i;
 
-		if (enif_get_uint(env, argv[1], &i) && --i < h->arity)
+		if (enif_get_uint64(env, argv[1], &i) && --i < h->arity)
 			return h->opts & OPT_SIGNED
 			       ? enif_make_int64(env, __atomic_load_n(h->array.s + i, __ATOMIC_RELAXED))
 			       : enif_make_uint64(env, __atomic_load_n(h->array.u + i, __ATOMIC_RELAXED));
@@ -62,9 +66,9 @@ static ERL_NIF_TERM put(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	atomics_handle_t* h;
 
 	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h)) {
-		unsigned int i;
+		uint64_t i;
 
-		if (enif_get_uint(env, argv[1], &i) && --i < h->arity) {
+		if (enif_get_uint64(env, argv[1], &i) && --i < h->arity) {
 			if (h->opts & OPT_SIGNED) {
 				int64_t v;
 
@@ -90,9 +94,9 @@ static ERL_NIF_TERM add(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	atomics_handle_t* h;
 
 	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h)) {
-		unsigned int i;
+		uint64_t i;
 
-		if (enif_get_uint(env, argv[1], &i) && --i < h->arity) {
+		if (enif_get_uint64(env, argv[1], &i) && --i < h->arity) {
 			union {
 				int64_t s;
 				uint64_t u;
@@ -115,9 +119,9 @@ static ERL_NIF_TERM sub(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	atomics_handle_t* h;
 
 	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h)) {
-		unsigned int i;
+		uint64_t i;
 
-		if (enif_get_uint(env, argv[1], &i) && --i < h->arity) {
+		if (enif_get_uint64(env, argv[1], &i) && --i < h->arity) {
 			union {
 				int64_t s;
 				uint64_t u;
@@ -140,9 +144,9 @@ static ERL_NIF_TERM add_get(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	atomics_handle_t* h;
 
 	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h)) {
-		unsigned int i;
+		uint64_t i;
 
-		if (enif_get_uint(env, argv[1], &i) && --i < h->arity) {
+		if (enif_get_uint64(env, argv[1], &i) && --i < h->arity) {
 			union {
 				int64_t s;
 				uint64_t u;
@@ -168,9 +172,9 @@ static ERL_NIF_TERM sub_get(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 	atomics_handle_t* h;
 
 	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h)) {
-		unsigned int i;
+		uint64_t i;
 
-		if (enif_get_uint(env, argv[1], &i) && --i < h->arity) {
+		if (enif_get_uint64(env, argv[1], &i) && --i < h->arity) {
 			union {
 				int64_t s;
 				uint64_t u;
@@ -196,9 +200,9 @@ static ERL_NIF_TERM exchange(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]
 	atomics_handle_t* h;
 
 	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h)) {
-		unsigned int i;
+		uint64_t i;
 
-		if (enif_get_uint(env, argv[1], &i) && --i < h->arity) {
+		if (enif_get_uint64(env, argv[1], &i) && --i < h->arity) {
 			if (h->opts & OPT_SIGNED) {
 				int64_t v;
 
@@ -223,9 +227,9 @@ static ERL_NIF_TERM compare_exchange(ErlNifEnv* env, int argc, const ERL_NIF_TER
 	atomics_handle_t* h;
 
 	if (enif_get_resource(env, argv[0], atomics_handle_resource, (void*)&h)) {
-		unsigned int i;
+		uint64_t i;
 
-		if (enif_get_uint(env, argv[1], &i) && --i < h->arity) {
+		if (enif_get_uint64(env, argv[1], &i) && --i < h->arity) {
 			if (h->opts & OPT_SIGNED) {
 				int64_t e, d;
 
@@ -264,7 +268,7 @@ static ERL_NIF_TERM info(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 			max = enif_make_uint64(env, UINT64_MAX);
 			min = enif_make_uint64(env, 0);
 		}
-		enif_make_map_put(env, m, atom_size, enif_make_uint(env, h->arity), &m);
+		enif_make_map_put(env, m, atom_size, enif_make_uint64(env, h->arity), &m);
 		enif_make_map_put(env, m, atom_max, max, &m);
 		enif_make_map_put(env, m, atom_min, min, &m);
 		enif_make_map_put(env, m, atom_memory, enif_make_uint64(env, memory), &m);
@@ -289,6 +293,7 @@ static int load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
 	atom_min = enif_make_atom(env, "min");
 	atom_size = enif_make_atom(env, "size");
 	atom_memory = enif_make_atom(env, "memory");
+	atom_system_limit = enif_make_atom(env, "system_limit");
 	return 0;
 }
 
