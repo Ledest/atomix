@@ -4,4 +4,7 @@
                        {applications, [kernel, stdlib]},
                        {modules, []},
                        {env, []},
-                       {licenses, ["GPL-3.0+"]}]}.
+                       {licenses, ["GPL-3.0+"]},
+                       {build_tools, [rebar, rebar3]},
+                       {include_paths, ["src_ext"]},
+                       {exclude_paths, ["rebar.lock"]}]}.
