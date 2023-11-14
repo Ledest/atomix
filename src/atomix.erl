@@ -29,7 +29,7 @@
 -define(OPT_DEFAULT, ?OPT_SIGNED).
 
 load_nif() ->
-    P = case code:priv_dir(rar) of
+    P = case code:priv_dir(atomix) of
             {error, bad_name} ->
                 D1 = filename:join([".", "priv", "lib"]),
                 case filelib:is_dir(D1) of
