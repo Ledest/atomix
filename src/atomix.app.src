@@ -1,5 +1,5 @@
 {application, atomix, [{description, "Erlang atomics"},
-                       {vsn, "0.1.2"},
+                       {vsn, "0.1.3"},
                        {registered, []},
                        {applications, [kernel, stdlib]},
                        {modules, []},
