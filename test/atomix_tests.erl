@@ -10,6 +10,7 @@ bad_test() ->
     ?assertError(badarg, atomix:new(10, [{signed, bad}])),
     ?assertError(badarg, atomix:new(10, [{signed, true}, bad])),
     ?assertError(badarg, atomix:new(10, [{signed, false}|bad])),
+    ?assertError(system_limit, atomix:new(1 bsl 61, [])),
     Ref = atomix:new(10, []),
     ?assertError(badarg, atomix:get(1742, 7)),
     ?assertError(badarg, atomix:get(<<>>, 7)),
