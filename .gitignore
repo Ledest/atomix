@@ -3,9 +3,11 @@
 /c_src/*.d
 /c_src/*.o
 /priv
+compile_commands.json
+/_build
+/rebar.lock
 /doc
 /.eunit
-compile_commands.json
 .kateproject
 erl_crash.dump
 *~
